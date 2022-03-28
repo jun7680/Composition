@@ -41,7 +41,7 @@ final class SuperPayDashboardViewController: UIViewController, SuperPayDashboard
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("충전하기", for: .normal)
         button.setTitleColor(.systemBlue, for: .normal)
-        button.addTarget(SuperPayDashboardViewController.self, action: #selector(topupButtonDidTap), for: .touchUpInside)
+        button.addTarget(self, action: #selector(topupButtonDidTap), for: .touchUpInside)
         return button
     }()
     
@@ -127,6 +127,6 @@ final class SuperPayDashboardViewController: UIViewController, SuperPayDashboard
         balanceAmountLabel.text = balance
     }
     @objc private func topupButtonDidTap() {
-        
+        print("tap")
     }
 }
