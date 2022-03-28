@@ -20,7 +20,6 @@ final class AppHomeViewController: UIViewController, AppHomePresentable, AppHome
   
   init() {
     super.init(nibName: nil, bundle: nil)
-    
     setupViews()
   }
   

@@ -41,7 +41,7 @@ final class CardOnFileDashboardViewController: UIViewController, CardOnFileDashb
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("전체보기", for: .normal)
         button.setTitleColor(.systemBlue, for: .normal)
-        button.addTarget(self, action: #selector(seeAllButtonTapped), for: .touchUpInside)
+        button.addTarget(CardOnFileDashboardViewController.self, action: #selector(seeAllButtonTapped), for: .touchUpInside)
         return button
     }()
     
@@ -73,19 +73,28 @@ final class CardOnFileDashboardViewController: UIViewController, CardOnFileDashb
         super.init(coder: coder)
         setupViews()
     }
-    
+    func update(with viewModels: [PaymentMethodViewModel]) {
+        cardonFileStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        // [PaymentMethodViewModel] -> [PaymentMethodView]
+        let views = viewModels.map(PaymentMethodView.init)
+        views.forEach {
+            $0.roundCorners()
+            cardonFileStackView.addArrangedSubview($0)
+        }
+        cardonFileStackView.addArrangedSubview(addMethodButton)
+        
+        let heightConstraints = views.map { $0.heightAnchor.constraint(equalToConstant: 60) }
+        NSLayoutConstraint.activate(heightConstraints)
+    }
     private func setupViews() {
         view.addSubview(headerStackView)
         view.addSubview(cardonFileStackView)
         
         headerStackView.addArrangedSubview(titleLabel)
         headerStackView.addArrangedSubview(seeAllButton)
+    
         
-        let paymentView = PaymentMethodView()
-        paymentView.translatesAutoresizingMaskIntoConstraints = false
-        
-        cardonFileStackView.addArrangedSubview(paymentView)
-        cardonFileStackView.addArrangedSubview(addMethodButton)
         
         NSLayoutConstraint.activate([
             headerStackView.topAnchor.constraint(equalTo: view.topAnchor, constant: 10),
@@ -97,8 +106,7 @@ final class CardOnFileDashboardViewController: UIViewController, CardOnFileDashb
             cardonFileStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             cardonFileStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            addMethodButton.heightAnchor.constraint(equalToConstant: 60),
-            paymentView.heightAnchor.constraint(equalToConstant: 60)
+            addMethodButton.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
     
