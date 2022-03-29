@@ -7,9 +7,12 @@
 
 import ModernRIBs
 
-protocol TopupInteractable: Interactable {
+protocol TopupInteractable: Interactable,
+                            AddPaymentMethodListener,
+                            EnterAmountListener {
     var router: TopupRouting? { get set }
     var listener: TopupListener? { get set }
+    var presentationDelegateProxy: AdaptivePresentationControllerDelegateProxy { get }
 }
 
 protocol TopupViewControllable: ViewControllable {
@@ -19,20 +22,81 @@ protocol TopupViewControllable: ViewControllable {
 }
 
 final class TopupRouter: Router<TopupInteractable>, TopupRouting {
+    
+    private var navigationControllable: NavigationControllerable?
 
-    // TODO: Constructor inject child builder protocols to allow building children.
-    init(interactor: TopupInteractable, viewController: TopupViewControllable) {
+    private let addPaymentMethodBuildable: AddPaymentMethodBuildable
+    private var addPaymentMethodRouting: Routing?
+    private let enterAmountBuildable: EnterAmountBuildable
+    private var enterAmountRounting: Routing?
+    
+    init(
+        interactor: TopupInteractable,
+        viewController: ViewControllable,
+        addPaymentMethodBuildable: AddPaymentMethodBuildable,
+        enterAmountBuildable: EnterAmountBuildable
+    ) {
         self.viewController = viewController
+        self.addPaymentMethodBuildable = addPaymentMethodBuildable
+        self.enterAmountBuildable = enterAmountBuildable
         super.init(interactor: interactor)
         interactor.router = self
     }
 
     func cleanupViews() {
-        // TODO: Since this router does not own its view, it needs to cleanup the views
-        // it may have added to the view hierarchy, when its interactor is deactivated.
+        if viewController.uiviewController.presentedViewController != nil, navigationControllable != nil {
+            navigationControllable?.dismiss(completion: nil)
+        }
+    }
+    
+    func attachAddpaymentMethod() {
+        if addPaymentMethodRouting != nil { return }
+        
+        let router = addPaymentMethodBuildable.build(withListener: interactor)
+        
+        presentinsideNavigation(router.viewControllable)
+        attachChild(router)
+        addPaymentMethodRouting = router
+        
+    }
+    func detachAddpaymentMethod() {
+        guard let router = addPaymentMethodRouting else { return }
+        
+        dismissPresentedNavigation(completion: nil)
+        detachChild(router)
+        addPaymentMethodRouting = nil
+    }
+    
+    func attachEnterAmount() {
+        if enterAmountRounting != nil { return }
+        
+        let router = enterAmountBuildable.build(withListener: interactor)
+        
+        presentinsideNavigation(router.viewControllable)
+        attachChild(router)
+        enterAmountRounting = router
+    }
+    
+    func detachEnterAmount() {
+        guard let router = enterAmountRounting else { return }
+        
+        dismissPresentedNavigation(completion: nil)
+        detachChild(router)
+        enterAmountRounting = nil
+    }
+    
+    private func presentinsideNavigation(_ viewControllable: ViewControllable) {
+        let navigation = NavigationControllerable(root: viewControllable)
+        self.navigationControllable = navigation
+        navigation.navigationController.presentationController?.delegate = interactor.presentationDelegateProxy
+        viewController.present(navigation, animated: true, completion: nil)
     }
 
+    private func dismissPresentedNavigation(completion: (() -> Void)?) {
+        viewController.dismiss(completion: nil)
+        self.navigationControllable = nil
+    }
     // MARK: - Private
 
-    private let viewController: TopupViewControllable
+    private let viewController: ViewControllable
 }

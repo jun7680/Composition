@@ -9,31 +9,72 @@ import ModernRIBs
 
 protocol TopupRouting: Routing {
     func cleanupViews()
-    // TODO: Declare methods the interactor can invoke to manage sub-tree via the router.
+    
+    func attachAddpaymentMethod()
+    func detachAddpaymentMethod()
+    func attachEnterAmount()
+    func detachEnterAmount()
 }
 
 protocol TopupListener: AnyObject {
-    // TODO: Declare methods the interactor can invoke to communicate with other RIBs.
+    func topupDidClose()
 }
 
-final class TopupInteractor: Interactor, TopupInteractable {
+protocol TopupInteractorDependency {
+    var cardsOnFileRepository: CardOnFileRepository { get }
+}
 
-    weak var router: TopupRouting?
+final class TopupInteractor: Interactor, TopupInteractable, AdaptivePresentationControllerDelegate {
+ 
+    
+        weak var router: TopupRouting?
     weak var listener: TopupListener?
+    
+    let presentationDelegateProxy: AdaptivePresentationControllerDelegateProxy
 
-    // TODO: Add additional dependencies to constructor. Do not perform any logic
-    // in constructor.
-    override init() {}
+    private let dependency: TopupInteractorDependency
+    init(
+        dependency: TopupInteractorDependency
+    ) {
+        self.dependency = dependency
+        self.presentationDelegateProxy = AdaptivePresentationControllerDelegateProxy()
+        super.init()
+        self.presentationDelegateProxy.delegate = self
+    }
 
     override func didBecomeActive() {
         super.didBecomeActive()
-        // TODO: Implement business logic here.
+        
+        if dependency.cardsOnFileRepository.cardOnFile.value.isEmpty {
+            // 카드 추가 화면
+            router?.attachAddpaymentMethod()
+        } else {
+            // 금액 입력 화면
+            router?.attachEnterAmount()
+        }
     }
 
     override func willResignActive() {
         super.willResignActive()
 
         router?.cleanupViews()
-        // TODO: Pause any business logic.
+    }
+    
+    func presentationControllerDidDismiss() {
+        listener?.topupDidClose()
+    }
+    
+    func addPaymentMethodDidTapClose() {
+        router?.detachAddpaymentMethod()
+        listener?.topupDidClose()
+    }
+    
+    func addPaymentMethodDidAddCard(paymentMethod: PaymentMethod) {
+        
+    }
+    
+    func enterAmountDidTapClose() {
+        router?.detachEnterAmount()
+        listener?.topupDidClose()
     }
 }
